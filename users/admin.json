@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "username": "admin",
+  "display_name": "Admin",
+  "data_repo": null,
+  "is_admin": true,
+  "kdf": "PBKDF2-HMAC-SHA256",
+  "iterations": 600000,
+  "salt": "HL3aagPIa/Er+071Svm2DA==",
+  "iv": "LezcCxP3Xm3zTYXV",
+  "ciphertext": "xKhh0DIQnrGd4esckBMycbjMRiybUcj+fTVMg/FSJFszfWrCIn+U+/94yTGczmvNJhsexw935xBp+be45mXPwJ6icca+3p0qNWKQGeqZ6s+J2Eq5xPz2DIeDFpiy8ciIuqcimbD7FPJDqbUAaQ==",
+  "created_at": "2026-05-16T19:09:22Z",
+  "updated_at": "2026-05-16T19:09:22Z",
+  "managed_repos": [
+    "kjain-Cloudforia/worktrace-data-kashish"
+  ]
+}

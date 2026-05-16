@@ -6,9 +6,9 @@
   "is_admin": false,
   "kdf": "PBKDF2-HMAC-SHA256",
   "iterations": 600000,
-  "salt": "hjGt5iuswUnG4IuNOTD1HA==",
-  "iv": "heSROquV6GEpwygj",
-  "ciphertext": "iOkDUEUNvzArQkAaZKJfC3NwHjvaa0xNQEkn5L5FkoKCsntxCWY9t5uH809qfHUbMh896rzhFRcC57EFVfgHhpPrybhjjK6G31ONWYF23WTihkr6PhyPKfhGNtRj3iPhIz1Wz13btxYXZyOvTw==",
+  "salt": "ZSwHwvruyPzhqnGYP8WbRQ==",
+  "iv": "RQV4PspvPt1zUMx9",
+  "ciphertext": "GWG+mywfvhoXhPNTpdoDbzotlOKWogsQKooj1dbIrITcw2G12acp1wqejmbPF2x4jWXVCiXxtXNiUkPV/k8V+wp415TZsoQW7LhBmobESw1oyOF8IVv0n8TqSzB+bTj+3NyEVWajweiLFWIkJQ==",
   "created_at": "2026-05-16T19:09:22Z",
-  "updated_at": "2026-05-16T20:58:52.449Z"
+  "updated_at": "2026-05-16T20:59:46.151Z"
 }

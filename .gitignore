@@ -1,0 +1,14 @@
+# Never commit secrets or local-only artifacts.
+*.pat
+*.token
+.env
+.env.*
+*.swp
+.DS_Store
+__pycache__/
+*.pyc
+
+# Defensive: in case anyone ever drops a plaintext-PAT file in here while
+# building/debugging, this rule keeps it out of git history.
+plaintext-*.json
+pat-*.txt

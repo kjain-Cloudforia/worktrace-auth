@@ -6,11 +6,11 @@
   "is_admin": true,
   "kdf": "PBKDF2-HMAC-SHA256",
   "iterations": 600000,
-  "salt": "5T3l3lDkBaVjmRmo96nykA==",
-  "iv": "i69BYMgez1rcCp8Y",
-  "ciphertext": "wkW4nCU0bEq6MLxO8GcOM8y4d+ZYHtAkTHEbxcIsCRhPNPTDGMozvhyshnyZhud1HSg8+aKUoxtzQlGAVE73qIYDAznHYVBZAQ3AJfKjVzJCEjn/YRpULeepv1fBOK7nZkkS4iDQFL9cOzqQYg==",
+  "salt": "eO716YrPnTw1s5eLioOMBg==",
+  "iv": "v2jlizGw5FDasmdX",
+  "ciphertext": "D0DJx39nkRrOUTSDPoH/8yx/YKJS//WkHciX2yqxuiM4DegWGoRxeRp27//B3nACVf1TN0LtuGuyEwHF3CMDuym+rlNmKv/ys1JzVuK3We51Umz8QUp1XeDoK2g/A5bh4Z2jiu3qI3KRC6rAAA==",
   "created_at": "2026-05-16T19:55:48Z",
-  "updated_at": "2026-05-16T19:55:48Z",
+  "updated_at": "2026-05-16T20:35:31.026Z",
   "managed_repos": [
     "kjain-Cloudforia/worktrace-data-kashish"
   ]

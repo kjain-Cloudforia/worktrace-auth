@@ -1,121 +1,151 @@
-# Contributing to worktrace-auth
+# worktrace-auth — admin operations
 
-Admin operations for managing WorkTrace users. Most of these will move into the dashboard's admin module in Phase 5e — until then, here's the manual flow.
+Day-to-day operations live in the **Admin Console** tile on the WorkTrace dashboard. Almost everything you used to do via the DevTools console or hand-edited JSON is now a button click. This doc is the operational reference.
+
+For the *architectural* "why", see [`README.md`](./README.md).
 
 ## The repo's invariants
 
-- One file per user: `users/<username>.json`
-- `username` is a lowercase slug: letters, digits, hyphens; starts with a letter
-- File contents are AES-GCM ciphertext + PBKDF2 metadata + plaintext public fields (display name, repo pointer, admin flag)
-- Schema: [`worktrace-app/docs/schema/auth-user/v1.json`](https://github.com/kjain-Cloudforia/worktrace-app/blob/main/docs/schema/auth-user/v1.json)
-- The PAT inside the ciphertext must have the correct GitHub permissions for that user's `data_repo`. Issuing the PAT and verifying scopes is part of every create/reset flow.
+- **One file per user:** `users/<username>.json` (and `escrow/<username>.json` for non-admins).
+- **`username` is a lowercase slug:** letters, digits, hyphens; starts with a letter.
+- **Schema:** [`worktrace-app/docs/schema/auth-user/v1.json`](https://github.com/kjain-Cloudforia/worktrace-app/blob/main/docs/schema/auth-user/v1.json).
+- **All writes go through the dashboard or the helper Python scripts.** Hand-editing files works in a pinch but skips the crypto round-trip verification — easy way to lock yourself out.
+- **No plaintext credentials in commits.** Ever.
 
-## Onboarding a new user (manual, until Phase 5e)
+## Day-to-day operations
 
-For each new user "alice":
+### Add a new teammate
 
-### 1. Create their data repo
+**Pre-flight (on GitHub, admin's responsibility):**
+1. Create their data repo: `<org>/worktrace-data-<username>` — private, initialize with a tiny README.
+2. Generate a fine-grained PAT for the new user:
+   - Resource owner: `<org>`
+   - Repository access: **Only select repositories** → `worktrace-data-<username>` + `worktrace-auth`
+   - Permissions:
+     - `worktrace-data-<username>` — Contents: Read + Write
+     - `worktrace-auth` — Contents: Read + Write (so they can change their own password later)
+   - Expiration: 365 days (max for fine-grained)
+   - Copy the token string — you'll need it once.
 
-In the admin's GitHub UI:
-- New repo `worktrace-data-alice`
-- **Private**
-- Initialize with a tiny README
+**In the dashboard:**
+3. Sign in as admin.
+4. Open **Admin Console** tile → click **+ Add team member**.
+5. Fill the form:
+   - Username (slug), display name, data repo (`owner/repo`)
+   - The PAT from step 2
+   - An initial password you'll dictate to the user
+   - Your recovery code (needed to build the escrow file)
+6. Submit. The dashboard:
+   - Probes the data repo with the supplied PAT (catches typos / wrong scope)
+   - Confirms your recovery code unlocks `admin.recovery.json`
+   - Encrypts the PAT under the initial password → `users/<u>.json`
+   - Encrypts the PAT under the recovery code → `escrow/<u>.json`
+   - Commits both files
+7. The success screen shows the initial password with a Copy button. Send it to the user out-of-band (Slack DM, in person).
+8. Tell the user to sign in and rotate the password immediately via the **Change password** modal in the header.
 
-Then invite the user as a collaborator with **Write** access.
+### Reset a forgotten user password
 
-### 2. Generate a fine-grained PAT scoped to their data repo
+User says "I forgot my password." You don't need to know it — escrow has their PAT.
 
-Admin generates this on the user's behalf (the user never sees a PAT):
-- GitHub → Settings → Developer settings → Fine-grained tokens → Generate new
-- Token name: `worktrace-<username>` (e.g. `worktrace-alice`)
-- Resource owner: admin's account (the org/user that owns the data repo)
-- Repository access: **Only select repositories** → `worktrace-data-alice` + `worktrace-auth`
-  - `worktrace-data-alice` — Contents: Read + Write (for `dpsync` from the user's laptop)
-  - `worktrace-auth` — Contents: Read (so the user can read their own auth file on login; and Read+Write later if they want to change their own password)
-- Expiration: 365 days (the maximum)
+**In the dashboard:**
+1. Admin Console → find their row → **Reset password**.
+2. Modal asks for your recovery code + a new temporary password.
+3. Submit. The dashboard decrypts the escrow file with your recovery code → user's PAT → re-encrypts under the new temp password → commits the new `users/<u>.json`.
+4. Send the temp password out-of-band. Tell them to rotate it on first login.
 
-### 3. Build the encrypted user record
+### Revoke a user
 
-Until the admin module ships in Phase 5e, this is done from the dashboard's DevTools console:
+User leaves the team / something compromised / etc.
 
-```js
-import('./auth/auth.js').then(async (m) => {
-  const record = await m.buildUserRecord({
-    username:     'alice',
-    displayName:  'Alice Example',
-    dataRepo:     'kjain-Cloudforia/worktrace-data-alice',
-    pat:          'github_pat_…',       // ← the PAT from step 2
-    password:     'Some-Strong-Pass-1!', // ← initial password; user changes on first login
-    isAdmin:      false,
-  });
-  console.log(JSON.stringify(record, null, 2));
-});
-```
+**In the dashboard:**
+1. Admin Console → find their row → **Revoke** (subdued grey button; turns red on hover).
+2. Type their username to confirm.
+3. Submit. The dashboard deletes `users/<u>.json` + `escrow/<u>.json` from this repo. They can no longer sign in.
 
-Copy the output JSON.
+**Optional manual cleanup on GitHub:**
+- Revoke their PAT in Developer Settings → Personal access tokens.
+- Delete or archive their data repo if you want it gone.
 
-### 4. Commit the file
+The revoke flow leaves data alone by design — history preservation is a policy decision per-departure.
 
-Create `users/alice.json` in this repo with that JSON. Commit. Push.
+### Change your own password (admin or user)
+
+1. Sign in.
+2. Click **Change password** in the header.
+3. Enter current password + new password (twice).
+4. Submit. The dashboard re-encrypts your PAT under the new password and commits.
+
+Admin password changes do *not* affect escrow files (they're keyed to the recovery code, not the password).
+
+## Recovery operations
+
+### Admin forgot their own password — "Forgot password?" flow
+
+1. On the dashboard's login screen, click **Admin: forgot password?**
+2. Paste the recovery code + set a new admin password.
+3. Submit. The dashboard decrypts `admin.recovery.json` with the code → admin PAT plaintext → re-encrypts `users/admin.json` under the new password → auto-signs you in.
+
+This recovers from a fresh laptop as long as you have the recovery code in hand. No `config.json` needed.
+
+### Admin forgot password AND lost the recovery code
+
+The dashboard flow can't help. Local fallback:
 
 ```bash
-echo "<paste>" > users/alice.json
-git add users/alice.json
-git commit -m "Add user: alice"
-git push
+cd ~/Documents/DevPlatform
+python3 scripts/reset_admin.py
 ```
 
-### 5. Hand the user their credentials (out-of-band)
+This reads the admin PAT from `config.json` (must still be intact on the laptop), prompts for a new password, re-encrypts `admin.json`, and prints the git commit/push commands. After that, mint a fresh recovery code:
 
-Send via Signal, in person, or another secure channel:
-- Their username (`alice`)
-- The initial password (`Some-Strong-Pass-1!`)
-- Dashboard URL
+```bash
+python3 scripts/build_recovery_artifacts.py
+```
 
-The user logs in, ideally changes their password immediately (Phase 5f flow).
+Then push both repos.
 
-## Password reset (user forgot password)
+### Rotate the recovery code
 
-The encrypted PAT can't be recovered without the password. Admin's options:
+If the code is compromised:
 
-1. **Reissue PAT, set new password** (preferred — clean slate)
-   - Revoke the existing PAT in GitHub
-   - Generate a fresh PAT with the same scopes
-   - Re-run the build-record flow with a new initial password
-   - Replace `users/<username>.json` with the new record
-   - Hand the user their new password out-of-band
+```bash
+cd ~/Documents/DevPlatform
+python3 scripts/build_recovery_artifacts.py
+```
 
-2. **Re-encrypt the existing PAT under a new password** (if PAT still valid and recoverable — usually it's not)
-   - Use `m.rekeyUserRecord(record, oldPw, newPw)` if you somehow still have the old password
-   - Not typical — included for completeness
-
-## Revoking a user
-
-1. **Revoke the PAT in GitHub** (immediate — they can no longer access their data repo)
-2. **Remove `users/<username>.json` from this repo** (so they can't log into the dashboard)
-3. **Optional: archive their data repo** (GitHub → Settings → Archive — preserves history without active access)
-4. **Optional: remove them as collaborator** on the data repo
+The script prompts for the existing code (needed to decrypt existing escrow files), generates a fresh code, re-encrypts `admin.recovery.json` + every `escrow/<u>.json` under the new code, prints the new code once. Commit + push.
 
 ## Admin role specifics
 
-The `admin` user record (`users/admin.json`) has:
+The `admin` user record has:
 - `is_admin: true`
-- `data_repo: null` (admin has no personal data of their own — they manage others')
-- `managed_repos: ["worktrace-data-kashish", "worktrace-data-alice", ...]` — list of data repos the admin can read
-- The encrypted PAT inside admin's record has **Read** access to all `worktrace-data-*` repos plus **Read + Write** on `worktrace-auth` (so admin can manage user records from the dashboard in Phase 5e)
+- `data_repo: null` (admin has no personal data repo — they manage others')
+- `managed_repos: [...]` — list of data repos admin can read (informational; the source of truth for the roster is just "every file in `users/`")
+- The PAT inside admin's record has Read access to every `worktrace-data-*` repo + Read+Write on `worktrace-auth`
 
-Multiple admins are supported: just add `admin-bob.json`, `admin-carla.json`, etc. with `is_admin: true`. The dashboard's admin module routes everyone with `is_admin: true` into the admin view.
+Multiple admins are supported by the data model: just provision them with `is_admin: true`. Today the dashboard's "Reset password" button is hidden for admin rows (so admin can't reset their own from inside an authenticated session). Multi-admin support would relax this to allow admin-bob to reset admin-alice; not implemented yet because there's only one admin.
 
-## Key rotation
+## Schema evolution
 
-If the PBKDF2 iteration count moves up in a future version of `auth.js`:
+If we bump `schema_version` from 1 to 2:
 
-1. Each user logs in once with their current password (correctly decrypts under old iterations)
-2. Dashboard detects `record.iterations < KDF_ITERATIONS` and silently re-encrypts under the new iteration count
-3. Commits the updated record back via the user's `worktrace-auth` Write scope (Phase 5f scope)
+1. Old records keep working (decryption only depends on `kdf`/`iterations`/`salt`/`iv`/`ciphertext`).
+2. New records use v2.
+3. The dashboard reads either; helper scripts emit only the current version.
+4. Migration: when a v1 record is opened, optionally upgrade-in-place and rewrite — same pattern we'd use for iteration count bumps.
 
-If AES-GCM is ever deprecated (unlikely), we'd bump the schema to v2 and run a one-time migration script.
+If AES-GCM is ever deprecated (unlikely), bump to v2 with a new `kdf` value + run a one-time migration script that decrypts under the old scheme and re-encrypts under the new.
 
-## Don't commit secrets
+## What to do if you accidentally commit a secret
 
-`.gitignore` rejects `*.pat`, `.env*`, and other obvious patterns. The only sensitive data that should live in this repo is the AES-GCM ciphertext inside each `users/*.json`. The plaintext PATs and the user passwords must never appear in commits, comments, issue trackers, or chat.
+A plaintext PAT or password lands in a commit. Treat as compromised:
+
+1. Rotate the secret immediately:
+   - For a PAT: revoke on GitHub Developer Settings → Tokens, generate a fresh one, update `config.json`, rebuild auth records via scripts.
+   - For a password: change it via the Change Password modal.
+   - For a recovery code: run `build_recovery_artifacts.py` to mint a new one.
+2. Force-push to remove the commit from history (`git rebase -i` + drop the commit, then `git push --force-with-lease`).
+3. Audit subsequent commits to confirm the secret doesn't reappear.
+
+GitHub's secret scanning may also flag this and email you. Don't ignore those emails.

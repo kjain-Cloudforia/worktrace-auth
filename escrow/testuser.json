@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "kind": "escrow",
+  "username": "testuser",
+  "encrypted_by": "recovery_code",
+  "kdf": "PBKDF2-HMAC-SHA256",
+  "iterations": 600000,
+  "salt": "IFwL4dJ9eqdX0tWZWi9uJA==",
+  "iv": "NvY9Xhqf1mVhZeUL",
+  "ciphertext": "lhVsEF3aE2IWLflBC0Djt/wgGXTbHfyXOPbcDxvm+narN9o80ncbHRcfXPPTE2FgZ/poytXLOLSFOeVaNxM2iZlDQcYjfGS7V9AJn9O/Qr24FpjK7a4XeibecF/W5mzpaDRa0uRo5qKgeu6Fig==",
+  "created_at": "2026-05-17T18:05:32.617Z",
+  "updated_at": "2026-05-17T18:05:32.617Z"
+}

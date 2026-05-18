@@ -16,33 +16,16 @@ For the *architectural* "why", see [`README.md`](./README.md).
 
 ### Add a new teammate
 
-**Pre-flight (on GitHub, admin's responsibility):**
-1. Create their data repo: `<org>/worktrace-data-<username>` — private, initialize with a tiny README.
-2. Generate a fine-grained PAT for the new user:
-   - Resource owner: `<org>`
-   - Repository access: **Only select repositories** → `worktrace-data-<username>` + `worktrace-auth`
-   - Permissions:
-     - `worktrace-data-<username>` — Contents: Read + Write
-     - `worktrace-auth` — Contents: Read + Write (so they can change their own password later)
-   - Expiration: 365 days (max for fine-grained)
-   - Copy the token string — you'll need it once.
+**Full playbook lives at [`worktrace-cli/NEW-TEAMMATE.md`](https://github.com/kjain-Cloudforia/worktrace-cli/blob/main/NEW-TEAMMATE.md)** — that's the single canonical doc. It covers your part (GitHub + dashboard, ~5 min) and the teammate's part (paste one curl line, ~3 min) in one place.
 
-**In the dashboard:**
-3. Sign in as admin.
-4. Open **Admin Console** tile → click **+ Add team member**.
-5. Fill the form:
-   - Username (slug), display name, data repo (`owner/repo`)
-   - The PAT from step 2
-   - An initial password you'll dictate to the user
-   - Your recovery code (needed to build the escrow file)
-6. Submit. The dashboard:
-   - Probes the data repo with the supplied PAT (catches typos / wrong scope)
-   - Confirms your recovery code unlocks `admin.recovery.json`
-   - Encrypts the PAT under the initial password → `users/<u>.json`
-   - Encrypts the PAT under the recovery code → `escrow/<u>.json`
-   - Commits both files
-7. The success screen shows the initial password with a Copy button. Send it to the user out-of-band (Slack DM, in person).
-8. Tell the user to sign in and rotate the password immediately via the **Change password** modal in the header.
+Short version for context:
+
+1. **GitHub (you):** create `worktrace-data-<username>` (private) + add them as collaborator + generate a fine-grained PAT with Contents:RW on that repo + worktrace-auth.
+2. **Dashboard (you):** Admin Console → **+ Add team member** → fill the form (username, display name, data repo, PAT, initial password, your recovery code, their work shift). Submit. The dashboard probes everything, encrypts the PAT under both the initial password and the recovery code, and commits `users/<u>.json` + `escrow/<u>.json`.
+3. **Out-of-band (you):** send the teammate three values — username, initial password, PAT — plus the install command from NEW-TEAMMATE.md.
+4. **Their laptop (them):** they paste the install one-liner. Done in ~3 minutes.
+
+If anything in this doc disagrees with NEW-TEAMMATE.md, treat NEW-TEAMMATE.md as authoritative.
 
 ### Reset a forgotten user password
 
